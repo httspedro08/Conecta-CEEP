@@ -1,0 +1,14 @@
+# Ambiente Virtual
+backend/venv/
+venv/
+
+# Cache do Python
+__pycache__/
+*.pyc
+
+# Banco de dados local (evita enviar o arquivo binário)
+bd/*.db
+*.db
+
+# Configurações do VS Code
+.vscode/

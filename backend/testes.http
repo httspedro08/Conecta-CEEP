@@ -1,0 +1,58 @@
+### Variável de endereço da API
+@baseUrl = http://127.0.0.1:5000
+
+### 1. LISTAR TODAS AS RESERVAS (GET)
+GET {{baseUrl}}/reservas
+Content-Type: application/json
+
+###
+
+### 2. CADASTRAR NOVA RESERVA - EXEMPLO 1 (POST)
+POST {{baseUrl}}/reservas
+Content-Type: application/json
+
+{
+  "usuario_id": 1,
+  "ambiente_id": 2,
+  "data_reserva": "2026-10-15",
+  "hora_inicio": "08:00",
+  "hora_fim": "10:00",
+  "finalidade": "Aula prática de Algoritmos"
+}
+
+###
+
+### 3. CADASTRAR NOVA RESERVA - EXEMPLO 2 (POST)
+POST {{baseUrl}}/reservas
+Content-Type: application/json
+
+{
+  "usuario_id": 2,
+  "ambiente_id": 1,
+  "data_reserva": "2026-10-16",
+  "hora_inicio": "14:00",
+  "hora_fim": "16:00",
+  "finalidade": "Treino da equipe de Futsal"
+}
+
+###
+
+### 4. ATUALIZAR STATUS DE UMA RESERVA (PUT)
+PUT {{baseUrl}}/reservas/1
+Content-Type: application/json
+
+{
+  "status": "aprovado"
+}
+
+###
+
+### 5. DELETAR UMA RESERVA ESPECÍFICA POR ID (DELETE)
+DELETE {{baseUrl}}/reservas/1
+Content-Type: application/json
+
+###
+
+### 6. APAGAR TODAS AS RESERVAS DE UMA VEZ (DELETE)
+DELETE {{baseUrl}}/reservas/todas
+Content-Type: application/json
