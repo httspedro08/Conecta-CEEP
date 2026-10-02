@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Conecta-CEEP</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@600;800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="util"><div class="in">
+  <span>Portal institucional · Centro Estadual de Educação Profissional</span>
+  <span class="tools" role="group" aria-label="Acessibilidade">
+    <button type="button" id="aMenos" aria-label="Diminuir texto">A−</button>
+    <button type="button" id="aMais" aria-label="Aumentar texto">A+</button>
+    <button type="button" id="contraste" aria-pressed="false">Alto contraste</button>
+  </span>
+</div></div>
+<header><div class="in">
+  <a class="brand" href="#/inicio"><span class="mark" aria-hidden="true">C</span><span><b>Conecta-CEEP</b><small>Reserva de espaços escolares</small></span></a>
+  <div class="who">
+    <span id="whoName"></span>
+    <button class="btn ghost" id="logout" hidden>Sair</button>
+    <a class="btn" id="loginLink" href="#/login">Entrar</a>
+  </div>
+</div></header>
+<nav class="main" id="nav" aria-label="Principal"><div class="in">
+  <a href="#/inicio" data-p="inicio">Início</a>
+  <a href="#/reservas" data-p="reservas">Reservas</a>
+  <a href="#/minhas" data-p="minhas">Minhas reservas</a>
+  <a href="#/professores" data-p="professores" id="navProf" hidden>Professores</a>
+</div></nav>
+<div class="in crumb" id="crumb" aria-label="Você está em"></div>
+
+<main>
+  <!-- PÁGINA INICIAL (livre) -->
+  <section id="home" class="page">
+    <div class="card hero">
+      <h1>Reserva de espaços escolares</h1>
+      <p>Consulte a disponibilidade e agende laboratórios, ginásio, auditório e biblioteca do CEEP em um único sistema.</p>
+      <div class="row-l">
+        <a class="btn accent" href="#/reservas">Acessar o calendário</a>
+        <span id="homeHoje"></span>
+      </div>
+    </div>
+    <h2 class="sec">Agenda de hoje</h2>
+    <div class="card agenda" id="homeAgenda"></div>
+    <h2 class="sec">Serviços</h2>
+    <div class="svcs">
+      <a class="card svc" href="#/reservas"><b>Reservar um espaço</b><span>Escolha o dia, o espaço e o horário da sua aula.</span></a>
+      <a class="card svc" href="#/minhas"><b>Minhas reservas</b><span>Consulte e cancele os horários que você marcou.</span></a>
+      <a class="card svc" href="#/login"><b>Acesso do professor</b><span>Entre ou crie a sua conta para começar a reservar.</span></a>
+    </div>
+    <h2 class="sec">Informações</h2>
+    <div class="two">
+      <div class="card"><h3>Como funciona</h3>
+        <ol class="steps"><li>Entre com a sua conta de professor.</li><li>Escolha o dia no calendário e o espaço.</li><li>Reserve o horário livre e informe a turma.</li></ol>
+      </div>
+      <div class="card"><h3>Espaços disponíveis</h3><ul class="chips" id="homeEspacos"></ul></div>
+    </div>
+    <p class="notice"><strong>Aviso:</strong> o calendário e as reservas são de acesso exclusivo para professores autorizados, identificados pelo CPF.</p>
+  </section>
+
+  <!-- LOGIN / CADASTRO -->
+  <section id="auth" hidden aria-label="Acesso ao sistema"><div class="card authcard">
+    <a class="fechar" href="#/inicio" aria-label="Fechar e voltar ao início">×</a>
+    <h1>Reserve os espaços da escola</h1>
+    <p id="authNote"></p>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tabIn" aria-selected="true">Entrar</button>
+      <button role="tab" id="tabUp" aria-selected="false">Criar conta</button>
+    </div>
+    <form id="authForm" novalidate>
+      <div id="nameWrap" hidden>
+        <label for="fName">Nome completo</label>
+        <input id="fName" autocomplete="name">
+      </div>
+      <label for="fCpf">CPF</label>
+      <input id="fCpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" autocomplete="username">
+      <label for="fPass">Senha</label>
+      <input id="fPass" type="password" autocomplete="current-password">
+      <div class="msg" id="authMsg" role="alert"></div>
+      <button class="btn" style="width:100%;margin-top:6px" id="authBtn">Entrar</button>
+    </form>
+  </div></section>
+
+  <!-- APLICATIVO -->
+  <section id="app" hidden>
+    <div class="card">
+      <div class="cal-head">
+        <button id="prev" aria-label="Mês anterior">‹</button>
+        <h2 id="monthTitle"></h2>
+        <button id="next" aria-label="Próximo mês">›</button>
+      </div>
+      <div class="grid" id="dows"></div>
+      <div class="grid" id="days" style="margin-top:4px"></div>
+      <div class="legend">
+        <span><i style="background:var(--brand)"></i>Dia selecionado</span>
+        <span><i style="background:var(--busy)"></i>Quantidade de reservas</span>
+      </div>
+    </div>
+
+    <div class="card" id="panel">
+      <h2 id="dayTitle"></h2>
+      <p class="sub" id="daySub">Escolha o espaço para ver os horários.</p>
+      <div class="ov" id="overview" role="group" aria-label="Ocupação por espaço no dia"></div>
+      <label for="space">Espaço</label>
+      <select id="space"></select>
+      <div class="slots" id="slots"></div>
+    </div>
+  </section>
+<section id="prof" class="card page" hidden>
+    <h2>Professores autorizados</h2>
+    <p class="sub">Só quem tem o CPF nesta lista consegue criar conta e entrar no sistema.</p>
+    <form id="profForm" class="inline" novalidate>
+      <div><label for="cpfNovo">CPF</label><input id="cpfNovo" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></div>
+      <div><label for="nomeNovo">Nome do professor</label><input id="nomeNovo"></div>
+      <button class="btn">Autorizar</button>
+    </form>
+    <div class="msg" id="profMsg" role="alert"></div>
+    <div class="slots" id="profLista"></div>
+  </section>
+
+  <section id="minhas" class="card page" hidden>
+    <h2>Minhas reservas</h2>
+    <div class="slots" id="minhasLista"></div>
+  </section>
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<footer><div class="in">
+  <div><h4>Conecta-CEEP</h4><p>Sistema de reserva de espaços escolares, desenvolvido por estudantes do CEEP como projeto de conclusão de curso.</p></div>
+  <div><h4>Navegação</h4><a href="#/inicio">Início</a><a href="#/reservas">Reservas</a><a href="#/minhas">Minhas reservas</a></div>
+  <div><h4>Acesso</h4><a href="#/login">Entrar ou criar conta</a></div>
+</div><div class="copy">© 2026 Conecta-CEEP · Todos os direitos reservados</div></footer>
+
+<dialog id="dlg">
+  <h3 id="dlgTitle">Reservar horário</h3>
+  <p id="dlgInfo" style="margin:0;color:var(--muted);font-size:.9rem"></p>
+  <label for="turma">Turma ou atividade</label>
+  <input id="turma" placeholder="Ex.: 2º A, aula de Química">
+  <div class="msg" id="dlgMsg"></div>
+  <div class="row">
+    <button class="btn ghost" id="dlgCancel" type="button">Cancelar</button>
+    <button class="btn" id="dlgOk" type="button">Reservar</button>
+  </div>
+</dialog>
+
+<script src="script.js"></script>
+</body>
+</html>
