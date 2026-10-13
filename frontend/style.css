@@ -769,6 +769,16 @@ select {
     font-size: .92rem;
 }
 
+#turno {
+    display: block;
+    width: min(100%, 320px);
+    margin: 4px 0 16px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--surface);
+}
+
 #panel h2 {
     text-transform: capitalize;
     font-size: 1.25rem;

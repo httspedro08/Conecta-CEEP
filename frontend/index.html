@@ -18,7 +18,7 @@
 </div></div>
 <header><div class="in">
   <a class="brand" href="#/inicio">
-    <img src="logo.png" alt="Logo Conecta-CEEP" class="brand-logo">
+    <img src="Logo Conecta-CEEP.png" alt="Logo Conecta-CEEP" class="brand-logo">
     <span><b>Conecta-CEEP</b><small>Reserva de espaços escolares</small></span>
   </a>
   <div class="who">
@@ -106,6 +106,12 @@
     <div class="card" id="panel">
       <h2 id="dayTitle"></h2>
       <p class="sub" id="daySub">Escolha o espaço para ver os horários.</p>
+      <label for="turno">Turno</label>
+      <select id="turno" aria-label="Filtrar horários por turno">
+        <option value="matutino">Matutino</option>
+        <option value="vespertino">Vespertino</option>
+        <option value="noturno">Noturno</option>
+      </select>
       <div class="ov" id="overview" role="group" aria-label="Ocupação por espaço no dia"></div>
       <label for="space">Espaço</label>
       <select id="space"></select>

@@ -1,58 +1,80 @@
-### Variável de endereço da API
-@baseUrl = http://127.0.0.1:5000
+### Configurações Globais
+@baseUrl = http://localhost:5000
 
-### 1. LISTAR TODAS AS RESERVAS (GET)
+### 1. Teste de Status da API (GET)
+GET {{baseUrl}}/
+Accept: application/json
+
+###
+
+### 2. Cadastrar Novo Usuário / Professor (POST)
+POST {{baseUrl}}/usuarios
+Content-Type: application/json
+
+{
+  "cpf": "11144477735",
+  "nome": "Professor Teste",
+  "senha": "senha123"
+}
+
+###
+
+### 3. Autenticação / Login (POST)
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "cpf": "11144477735",
+  "senha": "senha123"
+}
+
+###
+
+### 4. Consultar Todas as Reservas (GET)
 GET {{baseUrl}}/reservas
-Content-Type: application/json
+Accept: application/json
 
 ###
 
-### 2. CADASTRAR NOVA RESERVA - EXEMPLO 1 (POST)
+### 5. Criar Nova Reserva (POST)
 POST {{baseUrl}}/reservas
 Content-Type: application/json
 
 {
-  "usuario_id": 1,
-  "ambiente_id": 2,
-  "data_reserva": "2026-10-15",
-  "hora_inicio": "08:00",
-  "hora_fim": "10:00",
-  "finalidade": "Aula prática de Algoritmos"
+  "id": "res-101",
+  "data": "2026-10-15",
+  "espaco": "Laboratório 1",
+  "horario": "07:10 – 08:00",
+  "cpf": "11144477735",
+  "nome": "Professor Teste",
+  "turma": "3º C - Desenvolvimento de Sistemas"
 }
 
 ###
 
-### 3. CADASTRAR NOVA RESERVA - EXEMPLO 2 (POST)
-POST {{baseUrl}}/reservas
+### 6. Cancelar / Deletar Reserva (DELETE)
+DELETE {{baseUrl}}/reservas/res-101
+Accept: application/json
+
+###
+
+### 7. Listar Professores Autorizados (GET)
+GET {{baseUrl}}/professores
+Accept: application/json
+
+###
+
+### 8. Autorizar Novo Professor (POST)
+POST {{baseUrl}}/professores
 Content-Type: application/json
 
 {
-  "usuario_id": 2,
-  "ambiente_id": 1,
-  "data_reserva": "2026-10-16",
-  "hora_inicio": "14:00",
-  "hora_fim": "16:00",
-  "finalidade": "Treino da equipe de Futsal"
+  "cpf": "22233344455",
+  "nome": "Professora Ana"
 }
 
 ###
 
-### 4. ATUALIZAR STATUS DE UMA RESERVA (PUT)
-PUT {{baseUrl}}/reservas/1
-Content-Type: application/json
-
-{
-  "status": "aprovado"
-}
-
-###
-
-### 5. DELETAR UMA RESERVA ESPECÍFICA POR ID (DELETE)
-DELETE {{baseUrl}}/reservas/1
-Content-Type: application/json
-
-###
-
-### 6. APAGAR TODAS AS RESERVAS DE UMA VEZ (DELETE)
-DELETE {{baseUrl}}/reservas/todas
-Content-Type: application/json
+### 9. Remover Professor Autorizado (DELETE)
+DELETE {{baseUrl}}/professores/22233344455
+Accept: application/json

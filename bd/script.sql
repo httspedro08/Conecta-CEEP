@@ -1,32 +1,40 @@
--- Criação da tabela de Usuários
+-- Script de Criação do Banco de Dados - Conecta-CEEP
+-- Salvar em: bd/script.sql
+
+-- 1. Tabela de Professores Autorizados (Coordenação gerencia)
+CREATE TABLE IF NOT EXISTS autorizados (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cpf VARCHAR(11) NOT NULL UNIQUE,
+    nome VARCHAR(100) NOT NULL
+);
+
+-- 2. Tabela de Usuários (Contas criadas pelos professores)
 CREATE TABLE IF NOT EXISTS usuarios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    matricula TEXT UNIQUE NOT NULL,
-    senha_hash TEXT NOT NULL,
-    perfil TEXT NOT NULL
+    cpf VARCHAR(11) NOT NULL UNIQUE,
+    nome VARCHAR(100) NOT NULL,
+    senha VARCHAR(255) NOT NULL,
+    papel VARCHAR(20) DEFAULT 'professor' -- 'professor' ou 'coordenacao'
 );
 
--- Criação da tabela de Ambientes
-CREATE TABLE IF NOT EXISTS ambientes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
-    descricao TEXT,
-    capacidade INTEGER NOT NULL,
-    ativo BOOLEAN DEFAULT 1
-);
-
--- Criação da tabela de Reservas
+-- 3. Tabela de Reservas de Espaços
 CREATE TABLE IF NOT EXISTS reservas (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    usuario_id INTEGER NOT NULL,
-    ambiente_id INTEGER NOT NULL,
-    data_reserva TEXT NOT NULL,
-    hora_inicio TEXT NOT NULL,
-    hora_fim TEXT NOT NULL,
-    finalidade TEXT NOT NULL,
-    status TEXT DEFAULT 'pendente',
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
-    FOREIGN KEY (ambiente_id) REFERENCES ambientes(id)
+    id TEXT PRIMARY KEY,               -- ID gerado dinamicamente no formato único
+    data VARCHAR(10) NOT NULL,          -- Formato: YYYY-MM-DD
+    espaco VARCHAR(100) NOT NULL,
+    horario VARCHAR(50) NOT NULL,
+    cpf VARCHAR(11) NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    turma VARCHAR(100) NOT NULL,
+    FOREIGN KEY (cpf) REFERENCES usuarios(cpf)
 );
+
+-- Carga inicial de Administradores / Coordenação
+INSERT OR IGNORE INTO autorizados (cpf, nome) VALUES ('10754772985', 'Juliano');
+INSERT OR IGNORE INTO autorizados (cpf, nome) VALUES ('09082967979', 'Pedro');
+INSERT OR IGNORE INTO autorizados (cpf, nome) VALUES ('12616379929', 'Maria');
+INSERT OR IGNORE INTO autorizados (cpf, nome) VALUES ('11144477735', 'Professor (teste)');
+
+INSERT OR IGNORE INTO usuarios (cpf, nome, senha, papel) VALUES ('10754772985', 'Juliano', '123', 'coordenacao');
+INSERT OR IGNORE INTO usuarios (cpf, nome, senha, papel) VALUES ('09082967979', 'Pedro', '321', 'coordenacao');
+INSERT OR IGNORE INTO usuarios (cpf, nome, senha, papel) VALUES ('12616379929', 'Maria', '154', 'coordenacao');

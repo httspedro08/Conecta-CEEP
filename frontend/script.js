@@ -1,5 +1,6 @@
 /* ---------- Configuração ---------- */
-// 1. Você pode adicionar ou remover locais dentro deste array (lista):
+const API_URL = "http://localhost:5000";
+
 const ESPACOS = [
   "Laboratório 1",
   "Laboratório 2",
@@ -12,43 +13,42 @@ const ESPACOS = [
   "Laboratorio Quimica"
 ];
 
-// 2. Novos horários configurados:
-const HORARIOS = [
-  "07:10 – 08:00",
-  "08:00 – 08:50",
-  "08:50 – 09:40",
-  "09:55 – 10:45",
-  "10:45 – 11:35",
-  "11:35 – 12:25"
-];
-
+const TURNOS = {
+  matutino: [
+    "07:10 - 08:00",
+    "08:00 - 08:50",
+    "08:50 - 09:40",
+    "09:55 - 10:45",
+    "10:45 - 11:35",
+    "11:35 - 12:25"
+  ],
+  vespertino: [
+    "13:10 - 14:00",
+    "14:00 - 14:50",
+    "14:50 - 15:40",
+    "15:55 - 16:45",
+    "16:45 - 17:35",
+    "17:35 - 18:25"
+  ],
+  noturno: [
+    "18:40 - 19:30",
+    "19:30 - 20:20",
+    "20:30 - 21:20",
+    "21:20 - 22:10",
+    "22:10 - 23:00"
+  ]
+};
+const HORARIOS = Object.values(TURNOS).flat();
 const MESES_PT = "pt-BR";
 
-/* ---------- Armazenamento (localStorage com proteção) ---------- */
 const store = {
   get(k, fallback){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } },
   set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 };
-let users = store.get("cc_usuarios2", []);
-let reservas = store.get("cc_reservas2", []); 
-let sessao = store.get("cc_sessao2", null);
 
-/* ---------- CPF e professores autorizados ---------- */
-const ADMIN = {nome: "Juliano", cpf: "10754772985", senha: "123"};
-const COORDENACAO = [ADMIN.cpf];
-let autorizados = store.get("cc_autorizados2", null);
-if(!autorizados){
-  autorizados = [{cpf: ADMIN.cpf, nome: ADMIN.nome}, {cpf: "11144477735", nome: "Professor (teste)"}];
-  store.set("cc_autorizados2", autorizados);
-}
-if(!autorizados.some(a => a.cpf === ADMIN.cpf)){
-  autorizados.unshift({cpf: ADMIN.cpf, nome: ADMIN.nome});
-  store.set("cc_autorizados2", autorizados);
-}
-if(!users.some(u => u.cpf === ADMIN.cpf)){
-  users.push({nome: ADMIN.nome, cpf: ADMIN.cpf, senha: ADMIN.senha});
-  store.set("cc_usuarios2", users);
-}
+let reservas = [];
+let autorizados = [];
+let sessao = store.get("cc_sessao2", null);
 
 function soDigitos(v){ return String(v).replace(/\D/g, "").slice(0, 11); }
 function formatarCpf(v){
@@ -66,16 +66,24 @@ function cpfValido(cpf){
   return true;
 }
 
-async function consultarProfessor(cpf){
-  return autorizados.some(a => a.cpf === cpf);
+async function carregarDadosAPI(){
+  try {
+    const resReservas = await fetch(API_URL + "/reservas");
+    if(resReservas.ok) reservas = await resReservas.json();
+
+    const resProf = await fetch(API_URL + "/professores");
+    if(resProf.ok) autorizados = await resProf.json();
+  } catch (error) {
+    console.error("Erro ao conectar com a API:", error);
+  }
 }
 
-/* ---------- Estado ---------- */
 const hoje = new Date();
 let view = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 let selecionado = iso(hoje);
 let modo = "in";
 let pendente = null;
+let turnoAtual = "matutino";
 
 const $ = id => document.getElementById(id);
 function iso(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
@@ -84,7 +92,21 @@ let toastT;
 function aviso(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 3200); }
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
-/* ---------- Login e cadastro ---------- */
+function mesmoEspaco(a, b){ return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase(); }
+function mesmoHorario(a, b){ return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase(); }
+
+function horarioJaComecou(dataIso, horario){
+  const agora = new Date();
+  const hojeAtual = iso(agora);
+  if(dataIso < hojeAtual) return true;
+  if(dataIso > hojeAtual) return false;
+  const inicio = String(horario).match(/(\d{2}):(\d{2})/);
+  if(!inicio) return false;
+  const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
+  const minutosInicio = Number(inicio[1]) * 60 + Number(inicio[2]);
+  return minutosAgora >= minutosInicio;
+}
+
 function erro(m){
   $("authMsg").textContent = m;
   const c = document.querySelector(".authcard");
@@ -107,40 +129,67 @@ $("authForm").addEventListener("submit", async e => {
   e.preventDefault();
   const cpf = soDigitos($("fCpf").value);
   const senha = $("fPass").value;
-  const nome = $("fName").value.trim();
+  const nome = $("fName").value.trim().replace(/\s+/g, " ");
+
   if(!cpf || !senha){ erro("Preencha CPF e senha."); return; }
   if(!cpfValido(cpf)){ erro("CPF inválido. Confira os números."); return; }
+
   $("authBtn").disabled = true;
-  $("authMsg").textContent = "Verificando se o CPF é de professor...";
-  const ehProfessor = await consultarProfessor(cpf);
-  $("authBtn").disabled = false;
-  $("authMsg").textContent = "";
-  if(!ehProfessor){ erro("Este CPF não consta como professor autorizado. Procure a coordenação."); return; }
-  const papel = COORDENACAO.includes(cpf) ? "coordenacao" : "professor";
-  if(modo === "up"){
-    if(!nome){ erro("Informe seu nome completo."); return; }
-    if(senha.length < 4){ erro("A senha precisa ter pelo menos 4 caracteres."); return; }
-    if(users.some(u => u.cpf === cpf)){ erro("Este CPF já tem cadastro. Use Entrar."); return; }
-    users.push({nome, cpf, senha});
-    store.set("cc_usuarios2", users);
-    sessao = {nome, cpf, papel};
-  } else {
-    const u = users.find(u => u.cpf === cpf && u.senha === senha);
-    if(!u){ erro("CPF ou senha incorretos."); return; }
-    sessao = {nome: u.nome, cpf: u.cpf, papel};
+  
+  try {
+    if(modo === "up"){
+      if(!nome || nome.split(" ").filter(Boolean).length < 2){ 
+        erro("Por favor, digite seu primeiro e segundo nome."); 
+        $("authBtn").disabled = false;
+        return; 
+      }
+      if(senha.length < 4){ erro("A senha precisa ter pelo menos 4 caracteres."); $("authBtn").disabled = false; return; }
+
+      const resposta = await fetch(API_URL + "/usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cpf: cpf, nome: nome, senha: senha })
+      });
+      const dados = await resposta.json();
+
+      if(!resposta.ok){
+        erro(dados.erro || "Erro ao criar conta.");
+        $("authBtn").disabled = false;
+        return;
+      }
+      sessao = { nome: nome, cpf: cpf, papel: dados.papel };
+    } else {
+      const resposta = await fetch(API_URL + "/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cpf: cpf, senha: senha })
+      });
+      const dados = await resposta.json();
+
+      if(!resposta.ok){
+        erro(dados.erro || "CPF ou senha incorretos.");
+        $("authBtn").disabled = false;
+        return;
+      }
+      sessao = dados.usuario;
+    }
+
+    store.set("cc_sessao2", sessao);
+    const vai = destino || "reservas"; destino = null;
+    $("authForm").reset();
+    atualizarHeader();
+    aviso("Bem-vindo(a), " + sessao.nome.split(" ")[0] + ".");
+    location.hash = "#/" + vai;
+    rota();
+  } catch (err) {
+    erro("Não foi possível conectar ao servidor.");
+  } finally {
+    $("authBtn").disabled = false;
   }
-  store.set("cc_sessao2", sessao);
-  const vai = destino || "reservas"; destino = null;
-  $("authForm").reset();
-  atualizarHeader();
-  aviso("Bem-vindo(a), " + sessao.nome.split(" ")[0] + ".");
-  location.hash = "#/" + vai;
-  rota();
 });
 
 $("logout").onclick = () => { sessao = null; store.set("cc_sessao2", null); atualizarHeader(); aviso("Você saiu da sua conta."); location.hash = "#/inicio"; rota(); };
 
-/* ---------- Calendário ---------- */
 function desenharCalendario(){
   $("monthTitle").textContent = view.toLocaleDateString(MESES_PT, {month:"long", year:"numeric"});
   const box = $("days"); box.innerHTML = "";
@@ -159,17 +208,22 @@ function desenharCalendario(){
     box.appendChild(b);
   }
 }
-$("prev").onclick = () => { view = new Date(view.getFullYear(), view.getMonth()-1, 1); desenharCalendario(); };
-$("next").onclick = () => { view = new Date(view.getFullYear(), view.getMonth()+1, 1); desenharCalendario(); };
+function mudarMes(delta){
+  view = new Date(view.getFullYear(), view.getMonth() + delta, 1);
+  selecionado = iso(view);
+  desenharCalendario();
+  desenharPainel();
+}
+$("prev").onclick = () => mudarMes(-1);
+$("next").onclick = () => mudarMes(1);
 
-/* ---------- Painel do dia ---------- */
 function desenharPainel(){
   const data = daDataIso(selecionado);
   $("dayTitle").textContent = data.toLocaleDateString(MESES_PT, {weekday:"long", day:"numeric", month:"long"});
   const espaco = $("space").value;
   $("overview").innerHTML = "";
   ESPACOS.forEach(e => {
-    const n = reservas.filter(r => r.data === selecionado && r.espaco === e).length;
+    const n = reservas.filter(r => r.data === selecionado && mesmoEspaco(r.espaco, e)).length;
     const b = document.createElement("button");
     b.type = "button";
     b.setAttribute("aria-pressed", e === espaco);
@@ -177,22 +231,25 @@ function desenharPainel(){
     b.onclick = () => { $("space").value = e; desenharPainel(); };
     $("overview").appendChild(b);
   });
-  const lista = reservas.filter(r => r.data === selecionado && r.espaco === espaco);
-  const livres = HORARIOS.length - lista.length;
-  $("daySub").textContent = livres + " de " + HORARIOS.length + " horários livres em " + espaco + ".";
+  const lista = reservas.filter(r => r.data === selecionado && mesmoEspaco(r.espaco, espaco));
+  const horariosTurno = TURNOS[turnoAtual];
+  const reservasTurno = lista.filter(r => horariosTurno.some(h => mesmoHorario(h, r.horario)));
+  const livres = horariosTurno.length - reservasTurno.length;
+  $("daySub").textContent = livres + " de " + horariosTurno.length + " horários livres no turno " + turnoAtual + " em " + espaco + ".";
+  $("turno").value = turnoAtual;
   const box = $("slots"); box.innerHTML = "";
   const wd = data.getDay();
   const motivo = selecionado < iso(hoje) ? "Esta data já passou. Escolha uma data a partir de hoje." : (wd === 0 || wd === 6) ? "Não há aulas aos sábados e domingos." : "";
   if(motivo){ $("daySub").textContent = espaco; box.innerHTML = '<div class="empty">' + motivo + '</div>'; return; }
-  HORARIOS.forEach(h => {
-    const r = lista.find(x => x.horario === h);
+  horariosTurno.forEach(h => {
+    const r = lista.find(x => mesmoHorario(x.horario, h));
     const el = document.createElement("button");
     el.type = "button";
     if(!r){
       el.className = "slot free";
       el.innerHTML = '<span class="t">'+h+'</span><span class="d">Livre</span><strong>Reservar</strong>';
       el.onclick = () => abrirReserva(h);
-    } else if(r.cpf === sessao.cpf){
+    } else if(sessao && soDigitos(r.cpf) === soDigitos(sessao.cpf)){
       el.className = "slot mine";
       el.innerHTML = '<span class="t">'+h+'</span><span class="d">Sua reserva: '+esc(r.turma)+'</span><strong>Cancelar</strong>';
       el.onclick = () => cancelar(r.id);
@@ -205,8 +262,11 @@ function desenharPainel(){
   });
 }
 $("space").onchange = desenharPainel;
+$("turno").onchange = () => {
+  turnoAtual = $("turno").value;
+  desenharPainel();
+};
 
-/* ---------- Reservar e cancelar ---------- */
 function abrirReserva(h){
   pendente = h;
   $("dlgInfo").textContent = $("space").value + " · " + daDataIso(selecionado).toLocaleDateString(MESES_PT,{day:"numeric",month:"long"}) + " · " + h;
@@ -215,32 +275,75 @@ function abrirReserva(h){
   $("turma").focus();
 }
 $("dlgCancel").onclick = () => $("dlg").close();
-$("dlgOk").onclick = () => {
+$("dlgOk").onclick = async () => {
   const turma = $("turma").value.trim();
   if(!turma){ $("dlgMsg").textContent = "Diga a turma ou a atividade."; return; }
+  if(!sessao || !sessao.cpf){ $("dlgMsg").textContent = "Sua sessão expirou. Entre novamente."; return; }
   const espaco = $("space").value;
-  if(reservas.some(r => r.data===selecionado && r.espaco===espaco && r.horario===pendente)){
-    $("dlgMsg").textContent = "Esse horário acabou de ser reservado."; return;
+  const data = daDataIso(selecionado);
+
+  if(selecionado < iso(new Date())){
+    $("dlgMsg").textContent = "Não é possível reservar uma data que já passou."; return;
   }
-  reservas.push({id: Date.now()+"-"+Math.random().toString(36).slice(2,6), data: selecionado, espaco, horario: pendente, cpf: sessao.cpf, nome: sessao.nome, turma});
-  store.set("cc_reservas2", reservas);
-  $("dlg").close();
-  desenharCalendario(); desenharPainel();
-  aviso("Reserva confirmada: " + espaco + ", " + pendente + ".");
+  if(data.getDay() === 0 || data.getDay() === 6){
+    $("dlgMsg").textContent = "Não é possível reservar sábados ou domingos."; return;
+  }
+  if(horarioJaComecou(selecionado, pendente)){
+    $("dlgMsg").textContent = "Esse horário já começou ou terminou."; return;
+  }
+
+  const novaReserva = {
+    id: Date.now()+"-"+Math.random().toString(36).slice(2,8),
+    data: selecionado,
+    espaco: espaco,
+    horario: pendente,
+    cpf: soDigitos(sessao.cpf),
+    nome: sessao.nome,
+    turma: turma
+  };
+
+  try {
+    const resposta = await fetch(API_URL + "/reservas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(novaReserva)
+    });
+    const dados = await resposta.json();
+
+    if(!resposta.ok){
+      $("dlgMsg").textContent = dados.erro || "Erro ao realizar reserva.";
+      return;
+    }
+
+    await carregarDadosAPI();
+    $("dlg").close();
+    desenharCalendario(); 
+    desenharPainel();
+    aviso("Reserva confirmada: " + espaco + ", " + pendente + ".");
+  } catch (err) {
+    $("dlgMsg").textContent = "Erro ao conectar com o servidor.";
+  }
 };
-function cancelar(id){
+
+async function cancelar(id){
   if(!confirm("Cancelar esta reserva?")) return;
-  reservas = reservas.filter(r => r.id !== id);
-  store.set("cc_reservas2", reservas);
-  desenharAtual();
-  aviso("Reserva cancelada.");
+  try {
+    const resposta = await fetch(API_URL + "/reservas/" + id, { method: "DELETE" });
+    if(resposta.ok){
+      await carregarDadosAPI();
+      desenharAtual();
+      aviso("Reserva cancelada.");
+    } else {
+      aviso("Erro ao cancelar a reserva.");
+    }
+  } catch (err) {
+    aviso("Erro ao conectar com o servidor.");
+  }
 }
 
-/* ---------- Início ---------- */
 ["D","S","T","Q","Q","S","S"].forEach(l => { const s = document.createElement("div"); s.className="dow"; s.textContent=l; $("dows").appendChild(s); });
 $("space").innerHTML = ESPACOS.map(e => "<option>"+e+"</option>").join("");
 
-/* ---------- Páginas e acesso ---------- */
 const MAP = {inicio:"home", login:"auth", reservas:"app", minhas:"minhas", professores:"prof"};
 const PROTEGIDAS = ["reservas","minhas","professores"];
 let destino = null;
@@ -252,14 +355,16 @@ function atualizarHeader(){
   $("loginLink").hidden = logado;
   $("navProf").hidden = !(logado && sessao.papel === "coordenacao");
 }
-function mostrar(p, aviso){
+
+async function mostrar(p, avisoTxt){
+  await carregarDadosAPI();
   Object.keys(MAP).forEach(n => { $(MAP[n]).hidden = n !== p && !(p === "login" && n === "inicio"); });
   document.body.style.overflow = p === "login" ? "hidden" : "";
   if(p === "login") setTimeout(() => $(modo === "up" ? "fName" : "fCpf").focus(), 80);
   document.querySelectorAll("#nav a").forEach(a => {
     if(a.dataset.p === p) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current");
   });
-  if(p === "login") $("authNote").textContent = aviso || "Acesso exclusivo para professores autorizados. Entre com o seu CPF.";
+  if(p === "login") $("authNote").textContent = avisoTxt || "Acesso exclusivo para professores autorizados. Entre com o seu CPF.";
   if(p === "inicio" || p === "login") desenharHome();
   if(p === "reservas"){ desenharCalendario(); desenharPainel(); }
   if(p === "minhas") desenharMinhas();
@@ -269,10 +374,12 @@ function mostrar(p, aviso){
   document.title = (p !== "inicio" ? nomes[p] + " · " : "") + "Conecta-CEEP";
   window.scrollTo(0,0);
 }
+
 function desenharAtual(){
   if(!$("app").hidden){ desenharCalendario(); desenharPainel(); }
   if(!$("minhas").hidden) desenharMinhas();
 }
+
 function desenharHome(){
   const n = reservas.filter(r => r.data === iso(hoje)).length;
   $("homeHoje").textContent = n ? n + (n===1 ? " reserva marcada para hoje." : " reservas marcadas para hoje.") : "Nenhuma reserva marcada para hoje.";
@@ -282,9 +389,11 @@ function desenharHome(){
     : '<div class="empty">Nenhum espaço reservado para hoje.</div>';
   $("homeEspacos").innerHTML = ESPACOS.map(e => "<li>"+e+"</li>").join("");
 }
+
 function desenharMinhas(){
   const box = $("minhasLista");
-  const minhas = reservas.filter(r => r.cpf === sessao.cpf).sort((a,b) => (a.data+a.horario).localeCompare(b.data+b.horario));
+  if(!sessao) return;
+  const minhas = reservas.filter(r => soDigitos(r.cpf) === soDigitos(sessao.cpf)).sort((a,b) => (a.data+a.horario).localeCompare(b.data+b.horario));
   if(!minhas.length){
     box.innerHTML = '<div class="empty">Você ainda não reservou nenhum horário.<br><a href="#/reservas">Abrir o calendário</a></div>';
     return;
@@ -302,34 +411,33 @@ function desenharMinhas(){
   });
 }
 
-/* ---------- Exibição de Professores e Senhas ---------- */
 function desenharProf(){
   const box = $("profLista");
   box.innerHTML = "";
   autorizados.forEach(a => {
     const el = document.createElement("div");
     el.className = "slot mine";
-    const coord = COORDENACAO.includes(a.cpf);
+    const coord = ['10754772985', '09082967979', '12616379929'].includes(soDigitos(a.cpf));
 
-    // Busca a senha criada pelo próprio professor ao cadastrar conta
-    const usuario = users.find(u => u.cpf === a.cpf);
-    const senhaTexto = usuario ? usuario.senha : "Ainda não criou senha";
-
-    el.innerHTML = '<span class="t">•••.•••.•••-' + a.cpf.slice(-2) + '</span>' +
-                   '<span class="d"><strong>' + esc(a.nome || "Sem nome") + '</strong> ' +
-                   '· Senha: <code>' + esc(senhaTexto) + '</code>' + 
-                   (coord ? " · (Coordenação)" : "") + '</span>';
+    el.innerHTML = '<span class="t">•••.•••.•••-' + esc(String(a.cpf).slice(-2)) + '</span>' +
+                   '<span class="d"><strong>' + esc(a.nome || "Sem nome") + '</strong>' + (coord ? " · (Coordenação)" : "") + '</span>';
 
     if(!coord){
       const b = document.createElement("button");
       b.type = "button"; 
       b.className = "btn danger"; 
       b.textContent = "Remover";
-      b.onclick = () => {
-        autorizados = autorizados.filter(x => x.cpf !== a.cpf);
-        store.set("cc_autorizados2", autorizados);
-        desenharProf();
-        aviso("Professor removido da lista.");
+      b.onclick = async () => {
+        try {
+          const res = await fetch(API_URL + "/professores/" + soDigitos(a.cpf), { method: "DELETE" });
+          if(res.ok){
+            await carregarDadosAPI();
+            desenharProf();
+            aviso("Professor removido e acesso revogado.");
+          }
+        } catch (err) {
+          aviso("Erro ao conectar com o servidor.");
+        }
       };
       el.appendChild(b);
     }
@@ -338,20 +446,35 @@ function desenharProf(){
 }
 
 $("cpfNovo").addEventListener("input", e => { e.target.value = formatarCpf(e.target.value); });
-$("profForm").addEventListener("submit", e => {
+$("profForm").addEventListener("submit", async e => {
   e.preventDefault();
   const cpf = soDigitos($("cpfNovo").value);
-  const nome = $("nomeNovo").value.trim();
+  const nome = $("nomeNovo").value.trim().replace(/\s+/g, " ");
   const msg = $("profMsg");
   if(!cpfValido(cpf)){ msg.textContent = "CPF inválido. Confira os números."; return; }
   if(!nome){ msg.textContent = "Informe o nome do professor."; return; }
-  if(autorizados.some(a => a.cpf === cpf)){ msg.textContent = "Este CPF já está na lista."; return; }
-  autorizados.push({cpf, nome});
-  store.set("cc_autorizados2", autorizados);
-  msg.textContent = "";
-  $("profForm").reset();
-  desenharProf();
-  aviso("Professor autorizado.");
+
+  try {
+    const resposta = await fetch(API_URL + "/professores", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cpf: cpf, nome: nome })
+    });
+    const dados = await resposta.json();
+
+    if(!resposta.ok){
+      msg.textContent = dados.erro || "Erro ao autorizar professor.";
+      return;
+    }
+
+    msg.textContent = "";
+    $("profForm").reset();
+    await carregarDadosAPI();
+    desenharProf();
+    aviso("Professor autorizado.");
+  } catch (err) {
+    msg.textContent = "Erro de conexão com a API.";
+  }
 });
 
 function rota(){
@@ -372,7 +495,6 @@ function rota(){
 }
 window.addEventListener("hashchange", rota);
 
-/* ---------- Fechar o login ---------- */
 document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("auth").hidden) location.hash = "#/inicio"; });
 let cliqueNoFundo = false;
 $("auth").addEventListener("mousedown", e => { cliqueNoFundo = e.target === $("auth"); });
@@ -381,7 +503,6 @@ $("auth").addEventListener("click", e => {
   cliqueNoFundo = false;
 });
 
-/* ---------- Acessibilidade ---------- */
 let fs = 100;
 function aplicarFs(){ document.documentElement.style.setProperty("--fs", fs + "%"); }
 $("aMais").onclick = () => { fs = Math.min(130, fs + 10); aplicarFs(); };
@@ -395,29 +516,4 @@ $("contraste").onclick = () => aplicarContraste($("contraste").getAttribute("ari
 aplicarContraste(store.get("cc_contraste", false));
 
 atualizarHeader();
-rota();
-
-document.addEventListener('DOMContentLoaded', () => {
-  const btnMais = document.getElementById('aMais');
-  const btnMenos = document.getElementById('aMenos');
-  
-  let percentualFonte = 100; // Nível base em percentagem
-
-  if (btnMais) {
-    btnMais.addEventListener('click', () => {
-      if (percentualFonte < 150) { // Limite máximo
-        percentualFonte += 10;
-        document.documentElement.style.fontSize = `${percentualFonte}%`;
-      }
-    });
-  }
-
-  if (btnMenos) {
-    btnMenos.addEventListener('click', () => {
-      if (percentualFonte > 70) { // Limite mínimo
-        percentualFonte -= 10;
-        document.documentElement.style.fontSize = `${percentualFonte}%`;
-      }
-    });
-  }
-});
+carregarDadosAPI().then(() => rota());
