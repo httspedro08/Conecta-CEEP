@@ -16,8 +16,8 @@
     --mine: #dbe8fb;
     --mine-ink: #0c3a85;
     box-sizing: border-box;
-    padding-top: env(safe-area-inset-top,0px);
-    padding-bottom: env(safe-area-inset-bottom,0px);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 :root[data-theme="dark"] {
@@ -43,21 +43,42 @@
     border: 1px solid currentColor;
 }
 
-html {
-    font-size: var(--fs,100%);
-    scroll-padding-top: env(safe-area-inset-top,0px);
+html, body {
+    height: 100%;
+    margin: 0;
 }
 
-* {
+html {
+    font-size: var(--fs, 100%);
+    scroll-padding-top: env(safe-area-inset-top, 0px);
+}
+
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
 body {
-    margin: 0;
     background: var(--bg);
     color: var(--ink);
-    font-family: "Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
     line-height: 1.5;
+}
+
+/* Estrutura para manter o rodapé sempre na parte inferior da tela */
+.site-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1 0 auto;
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 16px clamp(14px, 4vw, 32px) 40px;
 }
 
 h1,
@@ -65,7 +86,7 @@ h2,
 h3,
 .brand b,
 .mark {
-    font-family: "Raleway","Source Sans 3",system-ui,sans-serif;
+    font-family: "Raleway", "Source Sans 3", system-ui, sans-serif;
 }
 
 button,
@@ -95,8 +116,8 @@ a {
 .in {
     max-width: 1180px;
     margin: 0 auto;
-    padding-left: clamp(14px,4vw,32px);
-    padding-right: clamp(14px,4vw,32px);
+    padding-left: clamp(14px, 4vw, 32px);
+    padding-right: clamp(14px, 4vw, 32px);
 }
 
 .util {
@@ -123,7 +144,7 @@ a {
 
 .util button {
     background: none;
-    border: 1px solid rgba(255,255,255,.55);
+    border: 1px solid rgba(255, 255, 255, .55);
     color: #fff;
     border-radius: 99px;
     padding: 1px 11px;
@@ -132,7 +153,7 @@ a {
 }
 
 .util button:hover {
-    background: rgba(255,255,255,.15);
+    background: rgba(255, 255, 255, .15);
 }
 
 header {
@@ -158,6 +179,13 @@ header .in {
     color: var(--ink);
 }
 
+.brand-logo {
+    height: 4em;
+    width: auto;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
 .mark {
     width: 46px;
     height: 46px;
@@ -168,7 +196,6 @@ header .in {
     place-items: center;
     font-weight: 800;
     font-size: 1.3rem;
-    border-bottom: 4px solid var(--accent);
     border: 1px solid var(--line);
     border-bottom: 4px solid var(--accent);
 }
@@ -217,7 +244,7 @@ nav.main a {
 }
 
 nav.main a:hover {
-    background: rgba(255,255,255,.14);
+    background: rgba(255, 255, 255, .14);
 }
 
 nav.main a[aria-current="page"] {
@@ -229,12 +256,6 @@ nav.main a[aria-current="page"] {
     padding-bottom: 0;
     font-size: .9rem;
     color: var(--muted);
-}
-
-main {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 16px clamp(14px,4vw,32px) 40px;
 }
 
 .btn {
@@ -274,8 +295,8 @@ main {
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 4px;
-    padding: clamp(14px,3vw,24px);
-    box-shadow: 0 1px 3px rgba(7,29,65,.12);
+    padding: clamp(14px, 3vw, 24px);
+    box-shadow: 0 1px 3px rgba(7, 29, 65, .12);
 }
 
 .page[hidden],
@@ -288,12 +309,12 @@ main {
     background: var(--gov);
     color: #fff;
     border-color: var(--gov);
-    padding: clamp(24px,5vw,52px);
+    padding: clamp(24px, 5vw, 52px);
 }
 
 .hero h1 {
     margin: 0 0 10px;
-    font-size: clamp(1.7rem,4.5vw,2.6rem);
+    font-size: clamp(1.7rem, 4.5vw, 2.6rem);
     line-height: 1.15;
     font-weight: 800;
     max-width: 22ch;
@@ -327,7 +348,7 @@ main {
 
 .svcs {
     display: grid;
-    grid-template-columns: repeat(3,1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
 }
 
@@ -344,7 +365,7 @@ main {
 
 .svc b {
     display: block;
-    font-family: "Raleway",sans-serif;
+    font-family: "Raleway", sans-serif;
     font-size: 1.1rem;
     color: var(--gov);
     margin-bottom: 4px;
@@ -408,7 +429,7 @@ main {
 footer {
     background: var(--gov-dark);
     color: #fff;
-    margin-top: 24px;
+    margin-top: auto;
     border-top: 4px solid var(--accent);
 }
 
@@ -423,7 +444,7 @@ footer .in {
 
 footer h4 {
     margin: 0 0 8px;
-    font-family: "Raleway",sans-serif;
+    font-family: "Raleway", sans-serif;
 }
 
 footer a {
@@ -445,7 +466,6 @@ footer p {
     padding: 10px;
 }
 
-/* login */
 #auth {
     position: fixed;
     inset: 0;
@@ -454,21 +474,21 @@ footer p {
     align-items: center;
     justify-content: center;
     padding: 16px;
-    background: rgba(7,29,65,.45);
+    background: rgba(7, 29, 65, .45);
     -webkit-backdrop-filter: blur(9px);
     backdrop-filter: blur(9px);
     overflow: auto;
 }
 
 [data-theme="dark"] #auth {
-    background: rgba(0,0,0,.72);
+    background: rgba(0, 0, 0, .72);
 }
 
 .authcard {
     position: relative;
     width: 100%;
     max-width: 420px;
-    box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
     border-top: 4px solid var(--accent);
 }
 
@@ -518,7 +538,7 @@ footer p {
 }
 
 @keyframes shake {
-    0%,100% {
+    0%, 100% {
         transform: none;
     }
     20% {
@@ -540,7 +560,7 @@ footer p {
         animation: fade .3s ease both;
     }
     .authcard {
-        animation: pop .5s cubic-bezier(.2,.8,.2,1) both;
+        animation: pop .5s cubic-bezier(.2, .8, .2, 1) both;
     }
     .authcard.shake {
         animation: shake .4s ease;
@@ -583,7 +603,7 @@ footer p {
 }
 
 input:focus {
-    box-shadow: 0 0 0 3px rgba(19,81,180,.3);
+    box-shadow: 0 0 0 3px rgba(19, 81, 180, .3);
     border-color: var(--brand);
 }
 
@@ -647,10 +667,9 @@ select {
     font-weight: 600;
 }
 
-/* app */
 #app {
     display: grid;
-    grid-template-columns: minmax(0,1.15fr) minmax(0,1fr);
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     gap: 20px;
     align-items: start;
 }
@@ -681,7 +700,7 @@ select {
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(7,1fr);
+    grid-template-columns: repeat(7, 1fr);
     gap: 4px;
 }
 
@@ -694,7 +713,7 @@ select {
 }
 
 .day {
-    aspect-ratio: 1/1;
+    aspect-ratio: 1 / 1;
     min-height: 44px;
     border-radius: 4px;
     border: 1px solid var(--line);
@@ -847,7 +866,7 @@ dialog {
 }
 
 dialog::backdrop {
-    background: rgba(7,29,65,.6);
+    background: rgba(7, 29, 65, .6);
 }
 
 dialog h3 {
@@ -908,14 +927,14 @@ dialog h3 {
 #toast {
     position: fixed;
     left: 50%;
-    bottom: calc(20px + env(safe-area-inset-bottom,0px));
-    transform: translate(-50%,20px);
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    transform: translate(-50%, 20px);
     background: var(--gov-dark);
     color: #fff;
     border-left: 6px solid var(--accent);
     padding: 12px 18px;
     border-radius: 4px;
-    box-shadow: 0 6px 20px rgba(0,0,0,.3);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .3);
     opacity: 0;
     pointer-events: none;
     max-width: calc(100% - 32px);
@@ -924,34 +943,7 @@ dialog h3 {
 
 #toast.on {
     opacity: 1;
-    transform: translate(-50%,0);
-}
-
-@media (max-width: 520px) {
-    .agenda .ln {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 820px) {
-    #app,
-    .two,
-    .svcs,
-    footer .in {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-    #toast {
-        transition: opacity .2s,transform .2s;
-    }
-    .slot,
-    .day,
-    .svc,
-    .btn {
-        transition: background .15s,border-color .15s,filter .15s;
-    }
+    transform: translate(-50%, 0);
 }
 
 .inline {
@@ -967,13 +959,29 @@ dialog h3 {
 }
 
 @media (max-width: 820px) {
+    #app,
+    .two,
+    .svcs,
+    footer .in,
     .inline {
         grid-template-columns: 1fr;
     }
 }
-.brand-logo {
-  height: 4em; /* Acompanha automaticamente a alteração do tamanho de texto */
-  width: auto;
-  object-fit: contain;
-  vertical-align: middle;
+
+@media (max-width: 520px) {
+    .agenda .ln {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    #toast {
+        transition: opacity .2s, transform .2s;
+    }
+    .slot,
+    .day,
+    .svc,
+    .btn {
+        transition: background .15s, border-color .15s, filter .15s;
+    }
 }
